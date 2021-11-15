@@ -4,7 +4,7 @@ from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
 
-from app import schemas
+from . import toss_payment
 
 # Shared properties
 class CashDepositBase(BaseModel):
@@ -72,20 +72,20 @@ class CashDepositAckRequest(CashDepositBase):
         return cls(payment_key=payment_key, order_id=order_id, amount=amount)
 
 class CashDepositAck(CashDepositBase):
-    cash_deposit: schemas.CashDeposit
-    payment: schemas.Payment
+    cash_deposit: CashDeposit
+    payment: toss_payment.Payment
 
 # Properties to cancel a cash deposit
 class CashDepositCancelRequest(CashDepositBase):
     payment_key : str
     cancel_reason: str
-    refund_receive_account: Optional[schemas.RefundReceiveAccount]
+    refund_receive_account: Optional[toss_payment.RefundReceiveAccount]
 
 class CashDepositCancel(CashDepositBase):
-    cash_deposit: schemas.CashDeposit
-    payment: schemas.Payment
+    cash_deposit: CashDeposit
+    payment: toss_payment.Payment
 
-class CashDepositCallbackRequest(schemas.PaymentBase):
+class CashDepositCallbackRequest(toss_payment.PaymentBase):
     pass
 
 class CashDepositCallback(BaseModel):
