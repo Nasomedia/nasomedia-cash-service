@@ -18,6 +18,7 @@ class CashDeposit(Base):
 
     description = Column(String, nullable=True)
     deposit_amount = Column(Integer, nullable=False)
+    secret = Column(String, nullable=True)
 
     requested_at = Column(DateTime(timezone=True), nullable=False, default=get_kst_now)
     ack_at = Column(DateTime(timezone=True), nullable=True)
@@ -28,5 +29,5 @@ class CashDeposit(Base):
     payment_key = Column(String, nullable=True)
 
     consumer_id = Column(Integer, ForeignKey(
-        "consumer.id", ondelete="CASCADE"), nullable=True)
+        "consumer.id", ondelete="CASCADE"), nullable=False)
     consumer = relationship(Consumer)
