@@ -6,7 +6,7 @@ from fastapi.params import Query
 from sqlalchemy.orm import Session
 
 from app import crud, schemas, models
-from app.crud.utils import get_kst_now
+from app.utils import get_kst_now
 from app.api.v1 import deps
 from app.models import cash_deposit, consumer
 from app.schemas.toss_payment import Payment

@@ -2,7 +2,7 @@ from sqlalchemy import Column, Integer, String, ForeignKey, DateTime, Boolean
 from sqlalchemy.dialects.postgresql import UUID
 from sqlalchemy.orm import relationship
 
-from app.crud.utils import get_kst_now
+from app.utils import get_kst_now
 from app.db import Base
 
 from typing import TYPE_CHECKING
