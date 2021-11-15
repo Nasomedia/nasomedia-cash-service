@@ -8,7 +8,7 @@ from app import schemas
 
 # Shared properties
 class CashDepositBase(BaseModel):
-    pass
+    description: Optional[str]
 
 # Properties to receive on creation
 class CashDepositCreate(CashDepositBase):
@@ -17,6 +17,43 @@ class CashDepositCreate(CashDepositBase):
 
 # Properties to receive on update
 class CashDepositUpdate(CashDepositBase):
+    secret: Optional[str] = None
+
+    request_at: Optional[datetime]
+    ack_at: Optional[datetime]
+    approved_at: Optional[datetime]
+    due_date: Optional[datetime]
+
+    is_canceled: Optional[bool] = False
+    payment_key: Optional[str]
+
+
+# Properties shared by models stored in DB
+class CashDepositInDBBase(CashDepositBase):
+    id: str
+
+    deposit_amount: int
+    secret: Optional[str] = None
+
+    requested_at: datetime
+    ack_at: Optional[datetime] = None
+    approved_at: Optional[datetime] = None
+    due_date: Optional[datetime] = None
+
+    is_canceled: bool = False
+    payment_key: Optional[str]
+
+    consumer_id: int
+
+    class Config:
+        orm_mode = True
+
+# Properties to return to client
+class CashDeposit(CashDepositInDBBase):
+    pass
+
+# Properties properties stored in DB
+class CashDepositInDB(CashDepositInDBBase):
     pass
 
 # Properties to acknowledge a cash deposit
@@ -38,33 +75,19 @@ class CashDepositAck(CashDepositBase):
     cash_deposit: schemas.CashDeposit
     payment: schemas.Payment
 
-
 # Properties to cancel a cash deposit
-class CashDepositCancel(CashDepositBase):
+class CashDepositCancelRequest(CashDepositBase):
     payment_key : str
     cancel_reason: str
     refund_receive_account: Optional[schemas.RefundReceiveAccount]
 
-# Properties shared by models stored in DB
-class CashDepositInDBBase(CashDepositBase):
-    id: str
+class CashDepositCancel(CashDepositBase):
+    cash_deposit: schemas.CashDeposit
+    payment: schemas.Payment
 
-    is_canceled: bool
-
-    requested_at: datetime
-    ack_at: Optional[datetime] = None
-    approved_at: Optional[datetime] = None
-    due_date: Optional[datetime] = None
-
-    consumer_id: int
-
-    class Config:
-        orm_mode = True
-
-# Properties to return to client
-class CashDeposit(CashDepositInDBBase):
+class CashDepositCallbackRequest(schemas.PaymentBase):
     pass
 
-# Properties properties stored in DB
-class CashDepositInDB(CashDepositInDBBase):
-    pass
+class CashDepositCallback(BaseModel):
+    status: str
+    detail: str

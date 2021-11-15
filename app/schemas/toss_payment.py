@@ -1,8 +1,6 @@
 from datetime import datetime
 from typing import Any, Optional
 from enum import Enum
-from aiohttp.helpers import set_result
-
 
 from pydantic import BaseModel, HttpUrl
 
@@ -85,6 +83,3 @@ class RefundReceiveAccount():
     bank: str
     account_number: str
     holder_name: str
-    
-class PaymentCallbackRequest(PaymentBase):
-    pass
