@@ -1,9 +1,9 @@
 from typing import Any, List, Optional, Union
+from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.params import Query
 from sqlalchemy.orm import Session
-
 
 from app import crud, schemas, models
 from app.crud.utils import get_kst_now
@@ -44,16 +44,16 @@ def create_cash_deposit(
     db: Session = Depends(deps.get_db),
     user: schemas.User = Depends(deps.get_current_active_user),
     *,
-    cash_deposit_in: schemas.CashDepositCreate
+    deposit_in: schemas.CashDepositCreate
 ):
     """
     Create new cash deposit
     """
 
-    if cash_deposit_in.deposit_amount < 1000 or cash_deposit_in.deposit_amount % 1000 != 0:
+    if deposit_in.deposit_amount < 1000 or deposit_in.deposit_amount % 1000 != 0:
         raise HTTPException(status_code=400, detail="Invalid amount value")
 
-    cash_deposit = crud.cash_deposit.create_with_consumer(db, obj_in=cash_deposit_in, consumer_id=user.id)
+    cash_deposit = crud.cash_deposit.create_with_consumer(db, obj_in=deposit_in, consumer_id=user.id)
     return cash_deposit
 
 
@@ -62,22 +62,22 @@ async def ack_cash_deposit(
     db: Session = Depends(deps.get_db),
     user: schemas.User = Depends(deps.get_current_active_superuser),
     toss: deps.TossPayment = Depends(deps.TossPayment),
-    cash_deposit_ack_in: schemas.CashDepositAckRequest =  Depends(schemas.CashDepositAckRequest.as_query)
+    deposit_ack_in: schemas.CashDepositAckRequest =  Depends(schemas.CashDepositAckRequest.as_query)
 ):
     """
     Acknowledge cash deposit
     """
-    cash_deposit = crud.cash_deposit.get(db, id=cash_deposit_ack_in.order_id)
+    cash_deposit = crud.cash_deposit.get(db, id=deposit_ack_in.order_id)
     if not cash_deposit:
         raise HTTPException(status_code=404, detail="Cash deposit not found")
     if cash_deposit.payment_key:
         raise HTTPException(status_code=400, detail="Already processed payment")
     if cash_deposit.consumer_id != user.id:
         raise HTTPException(status_code=403, detail="Not enough permission")
-    if cash_deposit_ack_in.amount != cash_deposit.deposit_amount:
+    if deposit_ack_in.amount != cash_deposit.deposit_amount:
         raise HTTPException(status_code=400, detail="Amount value doesn't coincide")
     
-    payment: schemas.Payment = await toss.ack_payment(cash_deposit_ack_in)
+    payment: schemas.Payment = await toss.ack_payment(deposit_ack_in)
     if payment.status != "DONE":
         raise HTTPException(status_code=400, detail="Failed to acknowledge payment")    
 
@@ -112,16 +112,16 @@ async def ack_cash_deposit(
 def cash_deposit_callback(
     db: Session = Depends(deps.get_db),
     *,
-    callback_in: schemas.CashDepositCallbackRequest
+    deposit_callback_in: schemas.CashDepositCallbackRequest
 ):
     "Cash deposit complete or cancel callback"
-    cash_deposit =  crud.cash_deposit.get(db, id=callback_in.orderId)
+    cash_deposit =  crud.cash_deposit.get(db, id=deposit_callback_in.orderId)
     if not cash_deposit:
-        raise HTTPException(status_code=404, detail=f"OrderId: {callback_in.orderId} not found")
-    if cash_deposit.secret != callback_in.secret:
+        raise HTTPException(status_code=404, detail=f"OrderId: {deposit_callback_in.orderId} not found")
+    if cash_deposit.secret != deposit_callback_in.secret:
         raise HTTPException(status_code=400, detail="Invalid secret, please check your secret")
 
-    if callback_in.status == "DONE":
+    if deposit_callback_in.status == "DONE":
         cash_deposit = crud.cash_deposit.update(db, db_obj=cash_deposit, obj_in=schemas.CashDepositUpdate(
             approved_at=get_kst_now()
         ))
@@ -134,7 +134,7 @@ def cash_deposit_callback(
         cash_deposit = crud.cash_deposit.update(
             db, db_obj=cash_deposit, obj_in=schemas.CashDepositUpdate(is_canceled=True))
         detail = "Successfully cancel deposit"
-    response = schemas.CashDepositCallback(status=callback_in.status, detail=detail)
+    response = schemas.CashDepositCallback(status=deposit_callback_in.status, detail=detail)
     return response
 
 
@@ -144,27 +144,28 @@ async def cancel_cash_deposit(
     user: schemas.User = Depends(deps.get_current_active_user),
     toss: deps.TossPayment = Depends(deps.TossPayment),
     *,
-    cash_deposit_cancel_in: schemas.CashDepositCancelRequest
+    deposit_cancel_in: schemas.CashDepositCancelRequest
 ):
     "Cancel cash deposit"
 
-    cash_deposit = crud.cash_deposit.get_with_payment_key(db, payment_key=cash_deposit_cancel_in.payment_key)
+    cash_deposit = crud.cash_deposit.get_with_payment_key(db, payment_key=deposit_cancel_in.payment_key)
     if not cash_deposit:
         raise HTTPException(status_code=400, detail="Invalid payment key")
     if cash_deposit.consumer_id != user.id:
         raise HTTPException(status_code=403, detail="Not enough permission")
     if cash_deposit.deposit_amount > cash_deposit.consumer.cash:
         raise HTTPException(status_code=400, detail="Not enough cash to refund")
+    if get_kst_now() - cash_deposit.approved_at > timedelta(days=3):
+        raise HTTPException(status_code=400, detail="The cancellation date has passed, It is 3 days after purchasing")
 
-    payment: schemas.Payment = await toss.cancel_payment(cash_deposit_cancel_in)
+    payment: schemas.Payment = await toss.cancel_payment(deposit_cancel_in)
     if payment.status != "PARTIAL_CANCELED" or payment.status != "CANCELED":
         raise HTTPException(status_code=400, detail="Failed to cancel payment")
-    
-    if payment.approvedAt is not None:
-        consumer = cash_deposit.consumer
-        crud.consumer.update(db, db_obj=consumer, obj_in=schemas.ConsumerUpdate(
-            amount=consumer.cash-cash_deposit.deposit_amount
-        ))
+
+    consumer = cash_deposit.consumer
+    crud.consumer.update(db, db_obj=consumer, obj_in=schemas.ConsumerUpdate(
+        amount=consumer.cash-cash_deposit.deposit_amount
+    ))
     
     cash_deposit = crud.cash_deposit.update(
         db, db_obj=cash_deposit, obj_in=schemas.CashDepositUpdate(is_canceled=True))
