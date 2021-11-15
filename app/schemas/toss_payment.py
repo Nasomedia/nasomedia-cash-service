@@ -79,7 +79,7 @@ class Payment(PaymentBase):
     cancels: Any
     secret: Optional[str]
 
-class RefundReceiveAccount():
+class RefundReceiveAccount(BaseModel):
     bank: str
     account_number: str
     holder_name: str
