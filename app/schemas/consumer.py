@@ -7,7 +7,7 @@ class ConsumerBase(BaseModel):
 
 # Properties to receive on creation
 class ConsumerCreate(ConsumerBase):
-    cash: int = 0
+    pass
 
 # Properties to receive on update
 class ConsumerUpdate(ConsumerBase):
