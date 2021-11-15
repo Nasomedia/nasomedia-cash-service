@@ -88,13 +88,14 @@ class TossPayment():
                 payment = schemas.Payment(**payment_data)
                 return payment
 
-    async def cancel_payment(self, cash_deposit_cancel_in: schemas.CashDepositCancel):
-        payment_key = getattr(cash_deposit_cancel_in, "payment_key")
-        delattr(cash_deposit_cancel_in, "payment_key")
-        body = jsonable_encoder(cash_deposit_cancel_in)
+    async def cancel_payment(self, cash_deposit_cancel_in: schemas.CashDepositCancelRequest):
+        body = {
+            "cancelReason": cash_deposit_cancel_in.cancel_reason,
+            "refundReceiveAccount": getattr(cash_deposit_cancel_in, "refund_receive_account")
+        }
         async with aiohttp.ClientSession(headers=self.headers) as session:
             async with session.post(
-                    f"{settings.TOSS_BASE_URL}/v1/payments/{payment_key}/cancel",
+                    f"{settings.TOSS_BASE_URL}/v1/payments/{cash_deposit_cancel_in.payment_key}/cancel",
                     json=body) as resp:
                 if resp.status != 200:
                     raise HTTPException(status_code=resp.status, detail=await resp.text())
