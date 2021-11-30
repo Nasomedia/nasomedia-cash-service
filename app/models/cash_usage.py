@@ -20,3 +20,4 @@ class CashUsage(Base):
     consumer_id = Column(Integer, ForeignKey(
         "consumer.id", ondelete="CASCADE"), nullable=True)
     consumer = relationship(Consumer)
+ 
