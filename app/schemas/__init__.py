@@ -4,4 +4,5 @@ from .cash_usage import CashUsage, CashUsageCreate, CashUsageInDB, CashUsageUpda
 from .cash_deposit import CashDeposit, CashDepositCreate, CashDepositInDB, CashDepositUpdate
 from .cash_deposit import CashDepositAckRequest, CashDepositAck, CashDepositCancelRequest, CashDepositCancel, CashDepositCallbackRequest, CashDepositCallback
 from .toss_payment import Payment, RefundReceiveAccount, PaymentBase
+from .series import Series
 from .episode import Episode
