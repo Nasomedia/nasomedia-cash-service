@@ -14,8 +14,11 @@ services:
     command: >
       bash -c "/app/prestart.sh 
       && uvicorn app.main:app --host 0.0.0.0 --port 80"
-    networks:
-      - servicenet
+    etworks:
+      servicenet:
+        aliases:
+          - cash
+      internal:
     deploy:
       replicas: 1
 
