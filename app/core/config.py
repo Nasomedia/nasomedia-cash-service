@@ -27,6 +27,9 @@ class Settings(BaseSettings):
     TOSS_AUTHORIZATION = base64.b64encode(
         f'{TOSS_SECRET_KEY}:'.encode("utf-8")).decode('utf-8')
 
+    MAIN_SERVICE_BASE_URL = os.getenv("MAIN_SERVICE_BASE_URL")
+    LIBRARY_SERVICE_BASE_URL = os.getenv("LIBRARY_SERVICE_BASE_URL")
+
     @validator("SQLALCHEMY_DATABASE_URI", pre=True)
     def assemble_db_connection(cls, v: Optional[str], values: Dict[str, Any]) -> Any:
         if isinstance(v, str):
