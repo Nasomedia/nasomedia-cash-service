@@ -2,7 +2,7 @@ version: '3'
 
 services:
   app:
-    image: hwc9169/nasomedia-cash-service:v1.1
+    image: hwc9169/nasomedia-cash-service:v1.2
     ports:
       - "83:80"
     env_file:
