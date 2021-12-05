@@ -68,6 +68,23 @@ def update_consumer(
     return consumer
 
 
+@router.put("/me", response_model=schemas.Consumer)
+def update_consumer(
+    db: Session = Depends(deps.get_db),
+    user: schemas.User = Depends(deps.get_current_active_user),
+    *,
+    consumer_in: schemas.ConsumerUpdate
+):
+    """
+    Update consumer
+    """
+    consumer = crud.consumer.get(db, id=user.id)
+    if not consumer:
+        raise HTTPException(status_code=404, detail="Consumer not found")
+    consumer = crud.consumer.update(db, db_obj=consumer, obj_in=consumer_in)
+    return consumer
+
+
 @router.delete("/{consumer_id}", response_model=schemas.Consumer)
 def delete_consumer(
     db: Session = Depends(deps.get_db),
