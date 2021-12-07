@@ -17,7 +17,7 @@ async def get_current_user(
 ) -> Dict[str, Any]:
     headers={"Authorization": f"Bearer {token}"}
     async with aiohttp.ClientSession(headers=headers) as session:
-        async with session.get(f"{settings.IDENTITY_SERVICE_BASE_URL}/v1/users/me") as resp:
+        async with session.get(f"{settings.IDENTITY_SERVICE_BASE_URL}/api/v1/users/me") as resp:
             if resp.status != 200:
                 raise HTTPException(status_code=resp.status, detail=await resp.text())
             user_data = await resp.json()
