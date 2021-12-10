@@ -1,14 +1,11 @@
-from typing import Any, List, Optional, Union
+from typing import List, Dict, Any
 from datetime import timedelta
 
 from fastapi import APIRouter, Depends, HTTPException
-from fastapi.params import Query
 from sqlalchemy.orm import Session
 
 from app import crud, schemas, models, deps
 from app.utils import get_kst_now
-from app.models import cash_deposit, consumer
-from app.schemas.toss_payment import Payment
 
 from app.core.config import settings
 
@@ -37,11 +34,10 @@ def read_cash_deposits(
         )
     return cash_deposits
 
-
 @router.post("", response_model=schemas.CashDeposit)
 def create_cash_deposit(
     db: Session = Depends(deps.get_db),
-    user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Dict[str, Any] = Depends(deps.get_current_active_user),
     *,
     deposit_in: schemas.CashDepositCreate
 ):
@@ -55,11 +51,10 @@ def create_cash_deposit(
     cash_deposit = crud.cash_deposit.create_with_consumer(db, obj_in=deposit_in, consumer_id=user.id)
     return cash_deposit
 
-
 @router.post("/ack", response_model=schemas.CashDepositAck)
 async def ack_cash_deposit(
     db: Session = Depends(deps.get_db),
-    user: schemas.User = Depends(deps.get_current_active_superuser),
+    current_user: Dict[str, Any] = Depends(deps.get_current_active_superuser),
     toss: deps.TossPayment = Depends(deps.TossPayment),
     deposit_ack_in: schemas.CashDepositAckRequest =  Depends(schemas.CashDepositAckRequest.as_query)
 ):
@@ -71,7 +66,7 @@ async def ack_cash_deposit(
         raise HTTPException(status_code=404, detail="Cash deposit not found")
     if cash_deposit.payment_key:
         raise HTTPException(status_code=400, detail="Already processed payment")
-    if cash_deposit.consumer_id != user.id:
+    if cash_deposit.consumer_id != current_user['user'].id:
         raise HTTPException(status_code=403, detail="Not enough permission")
     if deposit_ack_in.amount != cash_deposit.deposit_amount:
         raise HTTPException(status_code=400, detail="Amount value doesn't coincide")
@@ -106,7 +101,6 @@ async def ack_cash_deposit(
 
     return response
 
-
 @router.post("/callback", response_model=schemas.CashDepositCallback)
 def cash_deposit_callback(
     db: Session = Depends(deps.get_db),
@@ -136,11 +130,10 @@ def cash_deposit_callback(
     response = schemas.CashDepositCallback(status=deposit_callback_in.status, detail=detail)
     return response
 
-
 @router.post("/cancel", response_model=schemas.CashDepositCancel)
 async def cancel_cash_deposit(
     db: Session = Depends(deps.get_db),
-    user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Dict[str, Any] = Depends(deps.get_current_active_user),
     toss: deps.TossPayment = Depends(deps.TossPayment),
     *,
     deposit_cancel_in: schemas.CashDepositCancelRequest
@@ -150,7 +143,7 @@ async def cancel_cash_deposit(
     cash_deposit = crud.cash_deposit.get_with_payment_key(db, payment_key=deposit_cancel_in.payment_key)
     if not cash_deposit:
         raise HTTPException(status_code=400, detail="Invalid payment key")
-    if cash_deposit.consumer_id != user.id:
+    if cash_deposit.consumer_id != current_user['user'].id:
         raise HTTPException(status_code=403, detail="Not enough permission")
     if cash_deposit.deposit_amount > cash_deposit.consumer.cash:
         raise HTTPException(status_code=400, detail="Not enough cash to refund")
@@ -173,11 +166,10 @@ async def cancel_cash_deposit(
 
     return response
 
-
 @router.delete("/{deposit_id}", response_model=schemas.CashDeposit)
 def delete_cash_deposit(
     db: Session = Depends(deps.get_db),
-    user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Dict[str, Any] = Depends(deps.get_current_active_user),
     *,
     deposit_id: int,
 ):
@@ -185,7 +177,7 @@ def delete_cash_deposit(
     cash_deposit = crud.cash_deposit.get(db, id=deposit_id)
     if not cash_deposit:
         raise HTTPException(status_code=404, detail="Cash deposit not found")
-    if cash_deposit.consumer_id != user.id:
+    if cash_deposit.consumer_id != current_user['user'].id:
         raise HTTPException(status_code=403, detail="Not enough permission")
     cash_deposit = crud.cash_deposit.delete(db, id=deposit_id)
     return cash_deposit

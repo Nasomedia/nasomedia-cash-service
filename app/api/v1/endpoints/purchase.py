@@ -1,7 +1,7 @@
+from typing import Dict, Any
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.params import Query
 from sqlalchemy.orm import Session
-from typing import Dict, Any
 
 
 from app import crud, schemas, models, deps

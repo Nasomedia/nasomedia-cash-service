@@ -1,4 +1,4 @@
-from typing import Any, List, Optional
+from typing import Any, List, Dict
 
 from fastapi import APIRouter, Depends, HTTPException
 from fastapi.params import Query
@@ -13,7 +13,7 @@ router = APIRouter()
 @router.get("", response_model=List[schemas.CashUsage])
 def read_cash_usages(
     db: Session = Depends(deps.get_db),
-    user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Dict[str, Any] = Depends(deps.get_current_active_user),
     *,
     skip: int = 0,
     limit: int = 100
@@ -21,12 +21,12 @@ def read_cash_usages(
     """
     Retrieve cash usages
     """
-    if user.is_superuser:
+    if current_user['user'].is_superuser:
         cash_usages = crud.cash_deposit.get_multi(db, skip=skip, limit=limit)
     else:
         cash_usages = crud.cash_usage.get_multi_with_consumer(
             db,
-            consumer_id=user.id,
+            consumer_id=current_user['user'].id,
             skip=skip, 
             limit=limit
         )
@@ -36,7 +36,7 @@ def read_cash_usages(
 @router.post("", response_model=schemas.CashUsage)
 def create_cash_usage(
     db: Session = Depends(deps.get_db),
-    user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Dict[str, Any] = Depends(deps.get_current_active_user),
     *,
     usage_in: schemas.CashUsageCreate
 ):
@@ -44,14 +44,17 @@ def create_cash_usage(
     Create new cash usage
     """
     
-    cash_usage = crud.cash_usage.create_with_consumer(db, obj_in=usage_in, consumer_id=user.id)
+    cash_usage = crud.cash_usage.create_with_consumer(
+        db, 
+        obj_in=usage_in, 
+        consumer_id=current_user['user'].id)
     return cash_usage
 
 
 @router.put("/{usage_id}", response_model=schemas.CashUsage)
 def update_cash_usage(
     db: Session = Depends(deps.get_db),
-    user: schemas.User = Depends(deps.get_current_active_superuser),
+    current_user: Dict[str, Any] = Depends(deps.get_current_active_superuser),
     *,
     usage_id: int,
     usage_in: schemas.CashUsageUpdate
@@ -69,7 +72,7 @@ def update_cash_usage(
 @router.delete("/{usage_id}", response_model=schemas.CashUsage)
 def delete_cash_usage(
     db: Session = Depends(deps.get_db),
-    user: schemas.User = Depends(deps.get_current_active_user),
+    current_user: Dict[str, Any] = Depends(deps.get_current_active_user),
     *,
     usage_id: int,
 ):
