@@ -12,7 +12,7 @@ router = APIRouter()
 @router.get("/{episode_id}", response_model=schemas.Episode)
 async def purchase_episode(
     db: Session = Depends(deps.get_db),
-    current_user: Dict[str, Any] = Depends(deps.get_current_active_user),
+    user_info: Dict[str, Any] = Depends(deps.get_current_active_user),
     main_service: deps.MainService = Depends(),
     library_service: deps.LibraryService = Depends(),
     *,
@@ -22,12 +22,12 @@ async def purchase_episode(
     Purchase episode
     """
     episode = await main_service.get_episode(episode_id=episode_id)
-    consumer = crud.consumer.get(db, id=current_user['user'].id)
+    consumer = crud.consumer.get(db, id=user_info['user'].id)
     if consumer.cash < episode.price:
         raise HTTPException(status_code=400, detail='Insufficient cache')
     await library_service.create_purchased_episode(
         episode_id=episode_id, 
-        token=current_user['token']
+        token=user_info['token']
     )
     current_cash = consumer.cash-episode.price
     crud.consumer.update(

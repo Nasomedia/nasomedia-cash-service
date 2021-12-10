@@ -25,15 +25,15 @@ async def get_current_user(
             return {'user': user, 'token': token}
 
 async def get_current_active_user(
-    current_user, token: Dict[str, Any] = Depends(get_current_user)
+    user_info: Dict[str, Any] = Depends(get_current_user)
 ) -> Dict[str, Any]:
-    if not current_user.is_active:
+    if not user_info['user'].is_active:
         raise HTTPException(status_code=403, detail="Inactive user")
-    return {'user': current_user, 'token': token}
+    return {'user': user_info['user'], 'token': user_info['token']}
 
 async def get_current_active_superuser(
-    current_user, token:Dict[str, Any] = Depends(get_current_user)
+    user_info: Dict[str, Any] = Depends(get_current_user)
 ) -> Dict[str, Any]:
-    if not current_user.is_superuser:
+    if not user_info['user'].is_superuser:
         raise HTTPException(status_code=403, detail="The user doesn't have enough privileges")
-    return {'user': current_user, 'token': token}
+    return {'user': user_info['user'], 'token': user_info['token']}
