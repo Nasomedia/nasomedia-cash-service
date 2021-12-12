@@ -30,7 +30,7 @@ class CashDepositUpdate(CashDepositBase):
 
 # Properties shared by models stored in DB
 class CashDepositInDBBase(CashDepositBase):
-    id: str
+    id: UUID
 
     deposit_amount: int
     secret: Optional[str] = None
