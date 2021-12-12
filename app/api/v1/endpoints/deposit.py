@@ -49,6 +49,7 @@ def create_cash_deposit(
         raise HTTPException(status_code=400, detail="Invalid amount value")
 
     cash_deposit = crud.cash_deposit.create_with_consumer(db, obj_in=deposit_in, consumer_id=user_info['user'].id)
+    print(cash_deposit)
     return cash_deposit
 
 @router.post("/ack", response_model=schemas.CashDepositAck)
