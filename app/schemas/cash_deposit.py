@@ -1,8 +1,8 @@
 from fastapi.param_functions import Query
-from sqlalchemy.dialects.postgresql import UUID
 from datetime import datetime
 from typing import Optional
 from pydantic import BaseModel
+from uuid import UUID
 
 from . import toss_payment
 
